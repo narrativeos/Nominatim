@@ -711,6 +711,12 @@ class SearchDetails(LookupDetails):
         list (the default) will disable this filter.
     """
 
+    output_withevidence: bool = False
+    """ If True, include match evidence in the search result output,
+        showing which name tag (e.g. 'name', 'alt_name', 'name:zh') matched
+        the query terms.
+    """
+
     viewbox_x2: Optional[Bbox] = None
 
     locales: Optional['Locales'] = dataclasses.field(

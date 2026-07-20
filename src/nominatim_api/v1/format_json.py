@@ -144,6 +144,13 @@ def format_base_json(results: Union[ReverseResults, SearchResults],
         if options.get('namedetails', False):
             out.keyval('namedetails', result.names)
 
+        if result.match_type is not None:
+            out.keyval('match_type', result.match_type)
+        if result.matched_name_tag is not None:
+            out.keyval('matched_name_tag', result.matched_name_tag)
+        if result.matched_name is not None:
+            out.keyval('matched_name', result.matched_name)
+
         # must be string values
         bbox = cl.bbox_from_result(result)
         out.key('boundingbox').start_array()\
@@ -224,6 +231,13 @@ def format_base_geojson(results: Union[ReverseResults, SearchResults],
         if options.get('namedetails', False):
             out.keyval('namedetails', result.names)
 
+        if result.match_type is not None:
+            out.keyval('match_type', result.match_type)
+        if result.matched_name_tag is not None:
+            out.keyval('matched_name_tag', result.matched_name_tag)
+        if result.matched_name is not None:
+            out.keyval('matched_name', result.matched_name)
+
         out.end_object().next()  # properties
 
         out.key('bbox').start_array()
@@ -298,6 +312,13 @@ def format_base_geocodejson(results: Union[ReverseResults, SearchResults],
 
         if options.get('extratags', False):
             out.keyval('extra', _add_admin_level(result))
+
+        if result.match_type is not None:
+            out.keyval('match_type', result.match_type)
+        if result.matched_name_tag is not None:
+            out.keyval('matched_name_tag', result.matched_name_tag)
+        if result.matched_name is not None:
+            out.keyval('matched_name', result.matched_name)
 
         out.end_object().next().end_object().next()
 

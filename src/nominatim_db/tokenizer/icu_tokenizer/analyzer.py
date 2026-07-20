@@ -236,7 +236,10 @@ class ICUNameAnalyzer(AbstractAnalyzer):
         token_info = _TokenInfo()
 
         if place.searchable_names:
-            token_info.set_names(self._compute_name_tokens(place.searchable_names))
+            tokens, categories = self._compute_name_tokens(place.searchable_names)
+            token_info.set_names(tokens)
+            if categories:
+                token_info.set_name_categories(categories)
 
             if place.is_country():
                 assert place.country_code is not None
@@ -257,10 +260,11 @@ class ICUNameAnalyzer(AbstractAnalyzer):
                 token_info.add_street(self._retrieve_full_tokens(item.name))
             elif item.kind == 'place':
                 if not item.suffix:
-                    token_info.add_place(self._compute_name_tokens([item]))
+                    tokens, _ = self._compute_name_tokens([item])
+                    token_info.add_place(tokens)
             elif not item.suffix:
-                token_info.add_address_term(item.kind,
-                                            self._compute_name_tokens([item]))
+                tokens, _ = self._compute_name_tokens([item])
+                token_info.add_address_term(item.kind, tokens)
 
     def _compute_housenumber_token(self, hnr: PlaceName) -> Optional[itype.HousenumberTokenInfo]:
         """ Normalize the housenumber and return the word token and the
@@ -321,12 +325,17 @@ class ICUNameAnalyzer(AbstractAnalyzer):
 
         return full
 
-    def _compute_name_tokens(self, names: PlaceNames) -> set[int]:
+    def _compute_name_tokens(self, names: PlaceNames) -> tuple[set[int], dict[str, set[int]]]:
         """ Computes the full name and partial name tokens for the given
             dictionary of names.
+
+            Returns a tuple of (all_tokens, name_categories) where name_categories
+            maps category key (e.g. 'name', 'alt_name', 'name:zh') to the set of
+            word_ids in that category.
         """
         assert self.conn is not None
-        out = set()
+        out: set[int] = set()
+        categories: dict[str, set[int]] = {}
 
         for name in names:
             analyzer_id = name.get_attr('analyzer')
@@ -365,7 +374,13 @@ class ICUNameAnalyzer(AbstractAnalyzer):
 
             out.update(tokens)
 
-        return out
+            # Classify by kind (and suffix if present)
+            cat_key = name.kind if not name.suffix else f'{name.kind}:{name.suffix}'
+            if cat_key not in categories:
+                categories[cat_key] = set()
+            categories[cat_key].update(tokens)
+
+        return out, categories
 
 
 def _mk_array(tokens: Iterable[Any]) -> str:
@@ -379,6 +394,7 @@ class _TokenInfo:
     """
     def __init__(self) -> None:
         self.names: Optional[str] = None
+        self.name_categories: Optional[dict[str, str]] = None
         self.housenumbers: set[str] = set()
         self.housenumber_tokens: set[int] = set()
         self.street_tokens: Optional[set[int]] = None
@@ -393,6 +409,9 @@ class _TokenInfo:
 
         if self.names:
             out['names'] = self.names
+
+        if self.name_categories:
+            out['name_categories'] = self.name_categories
 
         if self.housenumbers:
             out['hnr'] = ';'.join(self.housenumbers)
@@ -411,6 +430,11 @@ class _TokenInfo:
             out['postcode'] = self.postcode
 
         return out
+
+    def set_name_categories(self, categories: dict[str, set[int]]) -> None:
+        """ Store name categories as Postgres array strings.
+        """
+        self.name_categories = {k: _mk_array(v) for k, v in categories.items()}
 
     def set_names(self, tokens: Iterable[int]) -> None:
         """ Adds token information for the normalised names.

@@ -9,7 +9,7 @@ SQLAlchemy definitions for all tables used by the frontend.
 """
 import sqlalchemy as sa
 
-from .sqlalchemy_types import Geometry, KeyValueStore, IntArray, CategoryArray
+from .sqlalchemy_types import Geometry, KeyValueStore, IntArray, CategoryArray, Json
 
 
 class SearchTables:
@@ -118,7 +118,8 @@ class SearchTables:
             sa.Column('name_vector', IntArray, nullable=False),
             sa.Column('nameaddress_vector', IntArray, nullable=False),
             sa.Column('country_code', sa.String(2)),
-            sa.Column('centroid', Geometry, nullable=False))
+            sa.Column('centroid', Geometry, nullable=False),
+            sa.Column('token_info', Json))
 
         self.tiger = sa.Table(
             'location_property_tiger', meta,

@@ -16,7 +16,8 @@ CREATE TABLE search_name (
   name_vector integer[] NOT NULL,
   nameaddress_vector integer[] NOT NULL,
   country_code varchar(2),
-  centroid GEOMETRY(Geometry, 4326) NOT NULL
+  centroid GEOMETRY(Geometry, 4326) NOT NULL,
+  token_info jsonb
   ) {{db.tablespace.search_data}};
 
 CREATE UNIQUE INDEX idx_search_name_place_id

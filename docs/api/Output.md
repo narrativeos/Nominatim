@@ -60,8 +60,12 @@ The possible fields are:
  * `namedetails` - dictionary with full list of available names including ref etc.
  * `geojson`, `svg`, `geotext`, `geokml` - full geometry
    (only with the appropriate `polygon_*` parameter)
- * `entrances` - array of objects representing tagged entrances for the object, or
-   null if none are found (only with `entrances=1`)
+  * `entrances` - array of objects representing tagged entrances for the object, or
+    null if none are found (only with `entrances=1`)
+  * `match_type` - name tag category that matched the query (e.g. `name`, `alt_name`, `name:zh`)
+    (only with `withevidence=1`)
+  * `matched_name_tag` - specific name tag key that matched (only with `withevidence=1`)
+  * `matched_name` - actual name value that matched (only with `withevidence=1`)
 
 ## JSONv2
 
@@ -91,6 +95,9 @@ The properties object has the following fields:
  * `namedetails` - dictionary with full list of available names including ref etc.
  * `entrances` - array of objects representing tagged entrances for the object, or
    null if none are found (only with `entrances=1`)
+ * `match_type` - name tag category that matched the query (only with `withevidence=1`)
+ * `matched_name_tag` - specific name tag key that matched (only with `withevidence=1`)
+ * `matched_name` - actual name value that matched (only with `withevidence=1`)
 
 Use `polygon_geojson` to output the full geometry of the object instead
 of the centroid.
@@ -116,6 +123,9 @@ The following feature attributes are implemented:
    (only with `extratags=1`)
  * `entrances` - array of objects representing tagged entrances for the object, or
    null if none are found (only with `entrances=1`)
+ * `match_type` - name tag category that matched the query (only with `withevidence=1`)
+ * `matched_name_tag` - specific name tag key that matched (only with `withevidence=1`)
+ * `matched_name` - actual name value that matched (only with `withevidence=1`)
 
 
 Use `polygon_geojson` to output the full geometry of the object instead
@@ -226,6 +236,9 @@ be more than one. The attributes of that element contain:
  * `class`, `type` - key and value of the main OSM tag
  * `importance` - computed importance rank
  * `icon` - link to class icon (if available)
+ * `match_type` - name tag category that matched the query (only with `withevidence=1`)
+ * `matched_name_tag` - specific name tag key that matched (only with `withevidence=1`)
+ * `matched_name` - actual name value that matched (only with `withevidence=1`)
 
 When `addressdetails=1` is requested, the localised address parts appear
 as subelements with the type of the address part.
@@ -341,6 +354,21 @@ associated with the entrance node.
 
 They roughly correspond to the classification of the OpenStreetMap data
 according to either the `place` tag or the main key of the object.
+
+### withevidence
+
+Match evidence information in the search result returns details about which name
+tag was used for matching. This is only available when `withevidence=1` is
+specified in the search request.
+
+ * `match_type` - the name tag category that matched (e.g. `name`, `alt_name`, `name:zh`, `old_name`)
+ * `matched_name_tag` - the specific name tag key that matched
+ * `matched_name` - the actual name value stored in that tag
+
+This information is useful for understanding why a particular result was
+returned and which name variant was used for matching. For example, when
+searching for a Chinese name, the `match_type` might be `name:zh` indicating
+a Chinese language variant was matched.
 
 #### Example
 

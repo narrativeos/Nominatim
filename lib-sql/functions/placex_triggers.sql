@@ -1097,10 +1097,10 @@ BEGIN
         IF array_length(name_vector, 1) is not NULL THEN
           INSERT INTO search_name (place_id, address_rank,
                                    importance, country_code, name_vector,
-                                   nameaddress_vector, centroid)
+                                   nameaddress_vector, centroid, token_info)
                  VALUES (NEW.place_id, NEW.rank_address,
                          NEW.importance, NEW.country_code, name_vector,
-                         nameaddress_vector, NEW.centroid);
+                         nameaddress_vector, NEW.centroid, NEW.token_info);
           {% if debug %}RAISE WARNING 'Place added to search table';{% endif %}
         END IF;
       END IF;
@@ -1273,10 +1273,10 @@ BEGIN
     {% if not db.reverse_only %}
         INSERT INTO search_name (place_id, address_rank,
                                  importance, country_code, name_vector,
-                                 nameaddress_vector, centroid)
+                                 nameaddress_vector, centroid, token_info)
                VALUES (NEW.place_id, NEW.rank_address,
                        NEW.importance, NEW.country_code, name_vector,
-                       nameaddress_vector, NEW.centroid);
+                       nameaddress_vector, NEW.centroid, NEW.token_info);
     {% endif %}
   END IF;
 

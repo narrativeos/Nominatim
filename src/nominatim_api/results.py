@@ -12,7 +12,7 @@ internal use only. That's why they are implemented as free-standing functions
 instead of member functions.
 """
 from typing import (
-    Optional, Tuple, Dict, Sequence, TypeVar, Type, List,
+    Optional, Tuple, Dict, Sequence, TypeVar, Type, List, Set,
     cast, Callable
 )
 import enum
@@ -207,6 +207,16 @@ class BaseResult:
     address_keywords: Optional[WordInfos] = None
 
     entrances: Optional[List[EntranceDetails]] = None
+
+    match_type: Optional[str] = None
+    """ Type of name match (e.g. 'name', 'alt_name', 'name:zh').
+    """
+    matched_name_tag: Optional[str] = None
+    """ The specific name tag that matched the query.
+    """
+    matched_name: Optional[str] = None
+    """ The actual name value that matched the query.
+    """
 
     geometry: Dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -742,6 +752,88 @@ async def complete_keywords(conn: SearchConnection, result: BaseResult) -> None:
 
         for row in await conn.execute(sel.where(t.c.word_id.in_(address_tokens))):
             result.address_keywords.append(WordInfo(*row))
+
+
+async def compute_match_types(conn: SearchConnection,
+                              results: List[BaseResult],
+                              query_word_ids: Set[int]) -> None:
+    """ For each result, determine which name category matched the query.
+
+        Reads token_info from search_name and checks which category
+        (e.g. 'name', 'alt_name', 'name:zh') contains the query word_ids.
+        Sets result.match_type, matched_name_tag, and matched_name.
+        If no category info is available (old data), match_type remains None.
+    """
+    if not query_word_ids:
+        return
+
+    place_ids = [r.place_id for r in results if r.place_id]
+    if not place_ids:
+        return
+
+    # Build result map for quick lookup
+    result_map = {r.place_id: r for r in results if r.place_id}
+
+    # 1. Get token_info from search_name
+    t = conn.t.search_name
+    sql = sa.select(t.c.place_id, t.c.name_vector, t.c.token_info)\
+            .where(t.c.place_id.in_(place_ids))
+
+    # Map: place_id -> matched category key
+    place_to_category: Dict[int, str] = {}
+
+    for row in await conn.execute(sql):
+        result = result_map.get(row.place_id)
+        if result is None:
+            continue
+
+        name_vector = row.name_vector or []
+        token_info = row.token_info or {}
+        categories = token_info.get('name_categories')
+        if categories is None:
+            continue
+
+        # Find which category contains the query word_ids
+        for cat_key, cat_tokens_str in categories.items():
+            # Parse Postgres array string "{1,2,3}" into set of ints
+            inner = cat_tokens_str.strip('{}')
+            if not inner:
+                continue
+            cat_tokens = set(int(x) for x in inner.split(',') if x.strip())
+            # Check if any query word_id is in this category AND in this place's name_vector
+            if cat_tokens.intersection(query_word_ids).intersection(name_vector):
+                place_to_category[row.place_id] = cat_key
+                break
+
+    if not place_to_category:
+        return
+
+    # 2. Get names from placex for matched places
+    t = conn.t.placex
+    matched_ids = list(place_to_category.keys())
+    sql = sa.select(t.c.place_id, t.c.name)\
+            .where(t.c.place_id.in_(matched_ids))
+
+    for row in await conn.execute(sql):
+        cat_key = place_to_category.get(row.place_id)
+        if cat_key is None:
+            continue
+
+        result = result_map.get(row.place_id)
+        if result is None:
+            continue
+
+        # Normalize the category key to match the name tag key
+        # e.g., 'name' -> 'name', 'name:zh' -> 'name:zh', 'alt_name' -> 'alt_name'
+        name_tag = cat_key
+        if name_tag in (row.name or {}):
+            matched_value = row.name[name_tag]
+        else:
+            matched_value = None
+
+        result.match_type = cat_key
+        result.matched_name_tag = name_tag
+        result.matched_name = matched_value
 
 
 async def complete_parented_places(conn: SearchConnection, result: BaseResult) -> None:

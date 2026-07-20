@@ -142,8 +142,22 @@ language variants, older names, references and brand.
 
 When set to 1, include the tagged entrances in the result.
 
+| Parameter | Value | Default |
+|-----------| ----- | ------- |
+| withevidence | 0 or 1 | 0 |
 
-### Language of results
+When set to 1, include match evidence information in the result. This includes
+three additional fields:
+
+ * `match_type` - the name tag category that matched the query (e.g. `name`, `alt_name`, `name:zh`)
+ * `matched_name_tag` - the specific name tag key that matched
+ * `matched_name` - the actual name value that matched
+
+This is useful for understanding why a particular result was returned and
+which name variant was used for matching.
+
+
+ ### Language of results
 
 | Parameter | Value | Default |
 |-----------| ----- | ------- |

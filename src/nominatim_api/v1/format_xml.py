@@ -143,4 +143,11 @@ def format_base_xml(results: Union[ReverseResults, SearchResults],
                 for entrance in result.entrances:
                     _create_entrance(eroot, entrance)
 
+        if result.match_type is not None:
+            place.set('match_type', result.match_type)
+        if result.matched_name_tag is not None:
+            place.set('matched_name_tag', result.matched_name_tag)
+        if result.matched_name is not None:
+            place.set('matched_name', result.matched_name)
+
     return '<?xml version="1.0" encoding="UTF-8" ?>\n' + ET.tostring(root, encoding='unicode')

@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 from ..connection import SearchConnection
 from ..types import PlaceRef, SearchDetails, PlaceID, OsmID, PostcodeRef
-from ..results import SearchResult, SearchResults, add_result_details
+from ..results import SearchResult, SearchResults, add_result_details, compute_match_types
 from ..timeout import Timeout
 from ..logging import log
 from .token_assignment import yield_token_assignments
@@ -310,6 +310,18 @@ class ForwardGeocoder:
             results = await self.execute_searches(query, searches[:50])
             results = self.pre_filter_results(results)
             await add_result_details(self.conn, results, self.params)
+
+            # Compute match evidence if requested
+            if self.params.output_withevidence:
+                query_word_ids: set[int] = set()
+                for node in query.nodes:
+                    if node.partial is not None:
+                        query_word_ids.add(node.partial.token)
+                    for tlist in node.starting:
+                        for t in tlist.tokens:
+                            query_word_ids.add(t.token)
+                await compute_match_types(self.conn, list(results), query_word_ids)
+
             log().result_dump('Preliminary Results', ((r.accuracy, r) for r in results))
             if len(results) > 1:
                 self.rerank_by_query(query, results)
