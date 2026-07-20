@@ -31,21 +31,53 @@ A quick summary of the necessary steps:
 1. Clone this git repository and download the country grid
 
         git clone https://github.com/osm-search/Nominatim.git
+        # Note: nominatim.org may require a browser User-Agent. Use curl with -A flag if wget fails:
+        # curl -L -A "Mozilla/5.0" -o Nominatim/data/country_osm_grid.sql.gz https://nominatim.org/data/country_grid.sql.gz
         wget -O Nominatim/data/country_osm_grid.sql.gz https://nominatim.org/data/country_grid.sql.gz
 
 2. Create a Python virtualenv and install the packages:
 
         python3 -m venv nominatim-venv
+        # On macOS, PyICU requires ICU to be in PATH and PKG_CONFIG_PATH:
+        # export PATH="/opt/homebrew/opt/icu4c@78/bin:$PATH"
+        # export PKG_CONFIG_PATH="/opt/homebrew/opt/icu4c@78/lib/pkgconfig:$PKG_CONFIG_PATH"
         ./nominatim-venv/bin/pip install packaging/nominatim-{api,db}
 
-3. Create a project directory, get OSM data and import:
+3. Configure the database (optional if using local PostgreSQL)
 
-        mkdir nominatim-project
-        cd nominatim-project
-        ../nominatim-venv/bin/nominatim import --osm-file <your planet file> 2>&1 | tee setup.log
+        By default, Nominatim connects to a local PostgreSQL database via Unix socket.
+        If using an external database (e.g., Docker), you can use the setup script:
+
+        ./utils/setup-docker-db.sh postgres yourpassword localhost 5432
+
+        Or manually create a .env file in the project directory:
+
+        # In nominatim-project/.env:
+        NOMINATIM_DATABASE_DSN="pgsql:dbname=nominatim;host=localhost;port=5432;user=youruser;password=yourpassword"
+        NOMINATIM_DATABASE_WEBUSER="www-data"
+        NOMINATIM_TOKENIZER="icu"
+        NOMINATIM_IMPORT_STYLE="extratags"
+
+        Note: 
+        - Nominatim uses a semicolon-separated DSN format (not URL format).
+        - NOMINATIM_DATABASE_WEBUSER must exist in PostgreSQL before import.
+        See docs/admin/Advanced-Installations.md for more database configuration options.
+
+4. Create a project directory, get OSM data and import:
+
+         mkdir nominatim-project
+         cd nominatim-project
+         # Optional: create .env file here for database configuration (see step 3)
+         ../nominatim-venv/bin/nominatim import --osm-file <your planet file> 2>&1 | tee setup.log
+
+         Note: If you get an error "database already exists", drop the existing database first:
+         
+         PGPASSWORD=your_admin_password psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS nominatim;"
+         
+         Then re-run the import command. Replace `your_admin_password` with your PostgreSQL admin password.
 
 
-4. Start the webserver:
+5. Start the webserver:
 
         ./nominatim-venv/bin/pip install uvicorn falcon
         ../nominatim-venv/bin/nominatim serve
