@@ -79,7 +79,7 @@ A quick summary of the necessary steps:
 
 5. Start the webserver:
 
-        ./nominatim-venv/bin/pip install uvicorn falcon
+        ../nominatim-venv/bin/pip install uvicorn falcon
         ../nominatim-venv/bin/nominatim serve
 
 

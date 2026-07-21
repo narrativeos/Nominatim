@@ -181,7 +181,7 @@ class Configuration:
         dsn = self.DATABASE_DSN
 
         def quote_param(param: str) -> str:
-            key, val = param.split('=')
+            key, val = param.split('=', 1)
             val = val.replace('\\', '\\\\').replace("'", "\\'")
             if ' ' in val:
                 val = "'" + val + "'"
