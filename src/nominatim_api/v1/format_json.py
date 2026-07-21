@@ -150,8 +150,6 @@ def format_base_json(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
-        if result.match_subtype is not None:
-            out.keyval('match_subtype', result.match_subtype)
 
         # must be string values
         bbox = cl.bbox_from_result(result)
@@ -239,8 +237,6 @@ def format_base_geojson(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
-        if result.match_subtype is not None:
-            out.keyval('match_subtype', result.match_subtype)
 
         out.end_object().next()  # properties
 
@@ -323,8 +319,6 @@ def format_base_geocodejson(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
-        if result.match_subtype is not None:
-            out.keyval('match_subtype', result.match_subtype)
 
         out.end_object().next().end_object().next()
 
