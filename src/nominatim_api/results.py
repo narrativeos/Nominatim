@@ -217,6 +217,11 @@ class BaseResult:
     matched_name: Optional[str] = None
     """ The actual name value that matched the query.
     """
+    match_subtype: Optional[str] = None
+    """ Subtype of match: 'exact' for exact character match, 'phonetic' for
+        sound-alike/transliteration match where query chars differ from place name.
+        Applies to all match_types (name, alt_name, name:zh, etc).
+    """
 
     geometry: Dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -756,12 +761,19 @@ async def complete_keywords(conn: SearchConnection, result: BaseResult) -> None:
 
 async def compute_match_types(conn: SearchConnection,
                               results: List[BaseResult],
-                              query_word_ids: Set[int]) -> None:
+                              query_word_ids: Set[int],
+                              query_text: Optional[str] = None) -> None:
     """ For each result, determine which name category matched the query.
 
         Reads token_info from search_name and checks which category
         (e.g. 'name', 'alt_name', 'name:zh') contains the query word_ids.
-        Sets result.match_type, matched_name_tag, and matched_name.
+        Sets result.match_type, matched_name_tag, matched_name, and match_subtype.
+        
+        match_subtype indicates:
+        - 'exact': The query text exactly matches the place name characters
+        - 'phonetic': The query text differs from place name but matches via
+                     transliteration/sound-alike (e.g., '京沪' matching '镜湖')
+        
         If no category info is available (old data), match_type remains None.
     """
     if not query_word_ids:
@@ -834,6 +846,19 @@ async def compute_match_types(conn: SearchConnection,
         result.match_type = cat_key
         result.matched_name_tag = name_tag
         result.matched_name = matched_value
+
+        # Determine match_subtype: 'exact' or 'phonetic'
+        if query_text and matched_value:
+            # Normalize both for comparison (strip whitespace, lowercase)
+            query_normalized = query_text.strip()
+            matched_normalized = matched_value.strip()
+            
+            if query_normalized == matched_normalized:
+                result.match_subtype = 'exact'
+            else:
+                # Characters differ but tokens matched, so it's a phonetic match
+                result.match_subtype = 'phonetic'
+        # If no query_text or matched_value available, match_subtype remains None
 
 
 async def complete_parented_places(conn: SearchConnection, result: BaseResult) -> None:
