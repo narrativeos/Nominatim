@@ -342,6 +342,7 @@ async def search_endpoint(api: NominatimAPIAsync, params: ASGIAdaptor) -> Any:
     details['query_stats'] = params.query_stats()
     details['countries'] = params.get('countrycodes', None)
     details['entrances'] = params.get_bool('entrances', False)
+    details['output_withevidence'] = params.get_bool('withevidence', False)
     details['excluded'] = params.get('exclude_place_ids', None)
     details['viewbox'] = params.get('viewbox', None) or params.get('viewboxlbrt', None)
     details['bounded_viewbox'] = params.get_bool('bounded', False)
