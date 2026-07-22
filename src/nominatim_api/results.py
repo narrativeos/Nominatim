@@ -797,6 +797,8 @@ async def compute_match_types(conn: SearchConnection,
             continue
 
         # Find which category contains the query word_ids
+        # Collect all matching categories first, then select by priority
+        matching_categories = []
         for cat_key, cat_tokens_str in categories.items():
             # Parse Postgres array string "{1,2,3}" into set of ints
             inner = cat_tokens_str.strip('{}')
@@ -805,8 +807,25 @@ async def compute_match_types(conn: SearchConnection,
             cat_tokens = set(int(x) for x in inner.split(',') if x.strip())
             # Check if any query word_id is in this category AND in this place's name_vector
             if cat_tokens.intersection(query_word_ids).intersection(name_vector):
-                place_to_category[row.place_id] = cat_key
-                break
+                matching_categories.append(cat_key)
+
+        # Select the best matching category by priority:
+        # 1. 'name' (primary name) has highest priority
+        # 2. 'name:xx' (localized names) come next
+        # 3. 'alt_name', 'ref', 'old_name', etc. have lowest priority
+        if matching_categories:
+            # Priority order: prefer 'name', then 'name:xx', then others
+            if 'name' in matching_categories:
+                place_to_category[row.place_id] = 'name'
+            else:
+                # Find name:xx entries (localized names)
+                localized_names = [c for c in matching_categories if c.startswith('name:')]
+                if localized_names:
+                    # Prefer the first localized name
+                    place_to_category[row.place_id] = localized_names[0]
+                else:
+                    # Fall back to the first matching category (alt_name, ref, etc.)
+                    place_to_category[row.place_id] = matching_categories[0]
 
     if not place_to_category:
         return
