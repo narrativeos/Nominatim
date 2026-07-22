@@ -217,6 +217,11 @@ class BaseResult:
     matched_name: Optional[str] = None
     """ The actual name value that matched the query.
     """
+    match_by_homophone: bool = False
+    """ If True, the match was via homophone (pinyin) rather than exact
+        character match. The matched_name does not contain the original
+        query text as characters.
+    """
 
     geometry: Dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -757,13 +762,14 @@ async def complete_keywords(conn: SearchConnection, result: BaseResult) -> None:
 async def compute_match_types(conn: SearchConnection,
                               results: List[BaseResult],
                               query_word_ids: Set[int],
-) -> None:
+                              query_text: str = '') -> None:
     """ For each result, determine which name category matched the query.
 
         Reads token_info from search_name and checks which category
         (e.g. 'name', 'alt_name', 'name:zh') contains the query word_ids.
         Sets result.match_type, matched_name_tag, matched_name.
-        
+        If query_text is provided, also sets match_by_homophone based on
+        whether the matched_name contains the original query text.
         
         If no category info is available (old data), match_type remains None.
     """
@@ -857,6 +863,15 @@ async def compute_match_types(conn: SearchConnection,
         result.matched_name_tag = name_tag
         result.matched_name = matched_value
 
+        # Determine if this is a homophone match:
+        # If the matched_name does not contain the original query text as characters,
+        # then the match was achieved via phonetic/pinyin matching rather than exact
+        # character matching.
+        if query_text and matched_value:
+            # Only mark as homophone if query is not longer than matched_name
+            # (longer queries could be partial matches, not homophones)
+            if len(query_text) <= len(matched_value):
+                result.match_by_homophone = query_text not in matched_value
 
 
 async def complete_parented_places(conn: SearchConnection, result: BaseResult) -> None:

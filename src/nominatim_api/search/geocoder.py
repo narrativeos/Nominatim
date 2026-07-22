@@ -320,7 +320,8 @@ class ForwardGeocoder:
                     for tlist in node.starting:
                         for t in tlist.tokens:
                             query_word_ids.add(t.token)
-                await compute_match_types(self.conn, list(results), query_word_ids)
+                query_text = ' '.join(phrase.text for phrase in phrases) if phrases else ''
+                await compute_match_types(self.conn, list(results), query_word_ids, query_text)
 
             log().result_dump('Preliminary Results', ((r.accuracy, r) for r in results))
             if len(results) > 1:

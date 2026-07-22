@@ -147,14 +147,17 @@ When set to 1, include the tagged entrances in the result.
 | withevidence | 0 or 1 | 0 |
 
 When set to 1, include match evidence information in the result. This includes
-three additional fields:
+four additional fields:
 
  * `match_type` - the name tag category that matched the query (e.g. `name`, `alt_name`, `name:zh`)
  * `matched_name_tag` - the specific name tag key that matched
  * `matched_name` - the actual name value that matched
+ * `match_by_homophone` - whether the match was via homophone/pinyin (true) or exact character match (false)
 
 This is useful for understanding why a particular result was returned and
-which name variant was used for matching.
+which name variant was used for matching. When `match_by_homophone` is true,
+it indicates the matched name does not contain the original query characters,
+suggesting a phonetic (e.g., pinyin) match rather than an exact character match.
 
 
  ### Language of results

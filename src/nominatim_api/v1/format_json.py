@@ -150,6 +150,8 @@ def format_base_json(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
+        if result.match_type is not None:
+            out.keyval('match_by_homophone', result.match_by_homophone)
 
         # must be string values
         bbox = cl.bbox_from_result(result)
@@ -237,6 +239,8 @@ def format_base_geojson(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
+        if result.match_type is not None:
+            out.keyval('match_by_homophone', result.match_by_homophone)
 
         out.end_object().next()  # properties
 
@@ -319,6 +323,8 @@ def format_base_geocodejson(results: Union[ReverseResults, SearchResults],
             out.keyval('matched_name_tag', result.matched_name_tag)
         if result.matched_name is not None:
             out.keyval('matched_name', result.matched_name)
+        if result.match_type is not None:
+            out.keyval('match_by_homophone', result.match_by_homophone)
 
         out.end_object().next().end_object().next()
 
