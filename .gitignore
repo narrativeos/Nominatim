@@ -16,3 +16,6 @@ data/country_osm_grid.sql.gz
 uv.lock
 *.egg-info/.env
 .DS_Store
+
+# Archify diagram tooling: generated viewer, captures and run receipts
+.archify/
