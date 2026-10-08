@@ -14,7 +14,8 @@ data/country_osm_grid.sql.gz
 
 # Not committed per project policy
 uv.lock
-*.egg-info/.env
+*.egg-info/
+.env
 .DS_Store
 
 # Archify diagram tooling: generated viewer, captures and run receipts
