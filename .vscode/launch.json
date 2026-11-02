@@ -1,0 +1,98 @@
+{
+    // Nominatim 调试配置
+    //
+    // 所有配置都使用项目自带的 nominatim-venv 解释器。
+    // CLI 类配置通过 nominatim-cli.py 运行，该脚本会把 src/ 加入
+    // sys.path，因此 src/ 下的断点会优先生效（而不是 site-packages
+    // 中已安装的副本）。
+    //
+    // 注意：search / serve / bdd 等需要已构建好的 Nominatim 数据库
+    // （先运行 `nominatim-cli.py import` 等命令构建）。
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 调试 CLI 搜索命令（等价于 nominatim search，需要已构建的数据库）
+            "name": "CLI: search（需要数据库）",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/nominatim-cli.py",
+            "args": [
+                "search",
+                "--query",
+                "Berlin",
+                "--limit",
+                "3"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            // 调试 API Web 服务器（默认监听 http://127.0.0.1:8088）
+            "name": "CLI: serve（API Web 服务器）",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/nominatim-cli.py",
+            "args": [
+                "serve"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            // 不需要数据库的最小 CLI 调试入口，可用于调试 CLI 解析逻辑
+            "name": "CLI: --help（无需数据库）",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/nominatim-cli.py",
+            "args": [
+                "--help"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            // 调试整个单元测试目录（make pytest 的等价物）
+            "name": "Pytest: 单元测试（test/python）",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "test/python",
+                "-x"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            // 调试当前打开的单个测试文件（在测试文件上按 F5 选择此项）
+            "name": "Pytest: 当前测试文件",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            // BDD 测试（make bdd 的等价物，需要数据库，会清空并重建测试库）
+            "name": "Pytest: BDD（test/bdd，需要数据库）",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "test/bdd",
+                "--nominatim-purge"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
