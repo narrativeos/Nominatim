@@ -10,7 +10,11 @@ Tests for the sanitizer that normalizes postcodes.
 import pytest
 
 from nominatim_db.tokenizer.place_sanitizer import PlaceSanitizer
+from nominatim_db.tokenizer.sanitizers.clean_postcodes import create as postcode_sanitizer_create
+from nominatim_db.tokenizer.sanitizers.config import SanitizerConfig
+from nominatim_db.tokenizer.sanitizers.base import ProcessInfo
 from nominatim_db.data.place_info import PlaceInfo
+from nominatim_db.data.place_name import PlaceName
 from nominatim_db.data import country_info
 
 
@@ -32,6 +36,27 @@ def sanitize(def_config, request):
         return sorted([(p.kind, p.name) for p in place.searchable_address])
 
     return _run
+
+
+def test_multiple_postcodes(def_config):
+    country_info.setup_country_config(def_config)
+    san = postcode_sanitizer_create(SanitizerConfig({
+        'step': 'clean-postcodes',
+        'convert-to-address': False
+    }))
+
+    place = ProcessInfo(PlaceInfo({
+        'country_code': 'de',
+        'address': {'city': 'Hamm', 'postcode': '01234'},
+    }))
+    place.address.append(PlaceName('invalid', 'postcode', None))
+    place.address.append(PlaceName('another', 'postcode', None))
+    place.address.append(PlaceName('10000', 'postcode', None))
+
+    san(place)
+
+    assert sorted([(p.kind, p.name) for p in place.address]) == \
+        [('city', 'Hamm'), ('postcode', '01234'), ('postcode', '10000')]
 
 
 @pytest.mark.parametrize("country", (None, 'ae'))
@@ -226,6 +251,22 @@ def test_postcode_virgin_islands_pass(sanitize, postcode):
 @pytest.mark.sanitizer_params(convert_to_address=False)
 def test_postcode_virgin_islands_fail(sanitize, postcode):
     assert sanitize(country='vg', postcode=postcode) == []
+
+
+@pytest.mark.parametrize("postcode,output", [('123456', '123456'),
+                                             ('ng-094432', '094432'),
+                                             ('EK-01-A03-FK-01', 'EK-01-A03-FK-01'),
+                                             ('NG 01 A03 FK 01', 'NG-01-A03-FK-01'),
+                                             ('bg34g56SD54', 'BG-34-G56-SD-54')])
+@pytest.mark.sanitizer_params(convert_to_address=False)
+def test_postcode_nigeria_pass(sanitize, postcode, output):
+    assert sanitize(country='ng', postcode=postcode) == [('postcode', output)]
+
+
+@pytest.mark.parametrize("postcode", ('11111', 'ng-34-a004501'))
+@pytest.mark.sanitizer_params(convert_to_address=False)
+def test_postcode_nigeria_fail(sanitize, postcode):
+    assert sanitize(country='ng', postcode=postcode) == []
 
 
 @pytest.mark.parametrize("postcode", ('AB1', '123-456-7890', '1 as 44'))

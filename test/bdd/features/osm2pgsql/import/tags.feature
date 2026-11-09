@@ -9,13 +9,17 @@ Feature: Tag evaluation
             n200 Tbuilding=yes,amenity=cafe
             n201 Tbuilding=yes,name=Intersting
             n202 Tbuilding=yes
+            n203 Tbuilding=yes,addr:housenumber=1
+            n204 Tbuilding=yes,landuse=retail,name=Two
             """
         Then place contains exactly
-            | object | class    | type     |
-            | N100   | highway  | bus_stop |
-            | N101   | junction | yes      |
-            | N200   | amenity  | cafe     |
-            | N201   | building | yes      |
+            | object | class    | type     | categories!set                             |
+            | N100   | highway  | bus_stop | 'osm.highway.bus_stop'                     |
+            | N101   | junction | yes      | 'osm.junction.yes'                         |
+            | N200   | amenity  | cafe     | 'osm.amenity.cafe'                         |
+            | N201   | building | yes      | 'osm.building.yes'                         |
+            | N203   | building | yes      | 'osm.building.yes'                         |
+            | N204   | building | yes      | 'osm.building.yes', 'osm.landuse.retail'   |
 
 
     Scenario: Name and reg tags
@@ -66,7 +70,17 @@ Feature: Tag evaluation
             | N4002  | place | 'streetnumber': '10', 'city': 'Rootoo' |
 
 
-    Scenario: Country codes
+    Scenario: addr:substreet is an alias for addr:place
+        When loading osm data
+            """
+            n41 Taddr:housenumber=34,addr:substreet=Bow%20%Terrace,addr:parentstreet=Main%20%Road
+            """
+        Then place contains exactly
+            | object | class | address!dict |
+            | N41    | place | 'housenumber': '34', 'place': 'Bow Terrace', 'parentstreet': 'Main Road' |
+
+
+     Scenario: Country codes
         When loading osm data
             """
             n5001 Tshop=yes,country_code=DE
@@ -279,10 +293,10 @@ Feature: Tag evaluation
             n3 Taddr:housenumber=23
             """
         Then place contains exactly
-            | object | class    | type  | address!dict        | name!dict |
-            | N1     | place    | house | 'housenumber': '23' | -    |
-            | N2     | place    | house | 'housenumber': '23' | 'addr:housename': 'Foo' |
-            | N3     | place    | house | 'housenumber': '23' | -    |
+            | object | class | type  | address!dict        | name!dict               | categories |
+            | N1     | place | house | 'housenumber': '23' | -                       | -          |
+            | N2     | place | house | 'housenumber': '23' | 'addr:housename': 'Foo' | -          |
+            | N3     | place | house | 'housenumber': '23' | -                       | -          |
 
 
     Scenario: Waterway locks
